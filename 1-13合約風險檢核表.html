@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合約風險檢核表</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8fafc;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Checkbox 樣式 */
+        .check-btn.active {
+            background-color: #1e293b;
+            border-color: #1e293b;
+            color: white;
+        }
+        .text-strike {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+        .accordion-content {
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .accordion-content.expanded {
+            max-height: 500px; /* 預估最大高度 */
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <header class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-rose-50 text-rose-600 text-sm font-bold mb-3 border border-rose-100">
+                    <i class="fa-solid fa-file-contract"></i> 合約實戰與風險控管
+                </div>
+                <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">合約風險檢核表</h1>
+                <p class="text-slate-500 text-base mt-2 font-medium max-w-2xl leading-relaxed">
+                    捨棄無效的文具行版本！請至內政部下載「包租代管專用合約」。本表助您檢核七大架構、避開十大違法踩雷區，並內建都更解約賠償計算器。
+                </p>
+            </div>
+            
+            <!-- 進度環 -->
+            <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 w-full md:w-auto shrink-0">
+                <div class="relative w-16 h-16 flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                        <circle cx="18" cy="18" r="16" fill="none" class="stroke-slate-200" stroke-width="3"></circle>
+                        <circle cx="18" cy="18" r="16" fill="none" class="stroke-slate-800 transition-all duration-500 ease-out" stroke-width="3" stroke-dasharray="100" stroke-dashoffset="100" id="progress-ring"></circle>
+                    </svg>
+                    <span class="absolute text-base font-bold text-slate-800" id="progress-text">0%</span>
+                </div>
+                <div>
+                    <span class="block text-sm font-bold text-slate-400 uppercase tracking-wider">合約檢核度</span>
+                    <span class="block text-base font-semibold text-slate-700" id="progress-count">0 / 0 已確認</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout: 2 Columns on Desktop -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Column: Checklists (8 cols) -->
+            <div class="lg:col-span-8 space-y-6">
+                
+                <!-- Filters -->
+                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2" id="filters">
+                    <button class="filter-btn px-4 py-2 rounded-lg text-base font-bold bg-slate-800 text-white shadow-sm transition whitespace-nowrap" data-filter="all">全部展開</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg text-base font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition whitespace-nowrap" data-filter="structure"><i class="fa-solid fa-list-ol mr-1"></i> 七大合約架構</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg text-base font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition whitespace-nowrap" data-filter="illegal"><i class="fa-solid fa-ban mr-1 text-rose-500"></i> 十大不得記載事項</button>
+                </div>
+
+                <!-- Interactive Checklist Container -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" id="checklist-container">
+                    <!-- JS 動態生成內容 -->
+                </div>
+            </div>
+
+            <!-- Right Column: Interactive Tool (4 cols) -->
+            <div class="lg:col-span-4 space-y-6">
+                
+                <!-- Tool: 都更解約/提前終止 賠償兵推計算器 -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sticky top-6">
+                    <div class="flex items-center gap-3 mb-4 pb-4 border-b border-slate-100">
+                        <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-calculator"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-slate-800">屋主疑慮：都更解約兵推</h2>
+                    </div>
+                    
+                    <p class="text-sm text-slate-500 mb-5 leading-relaxed">
+                        屋主常擔心：「若簽 5 年約，中間要都更怎麼辦？我要賠你多少裝潢費？」使用此工具算給屋主聽，建立信任感。
+                    </p>
+
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-2">預估總裝潢投入 (元)</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                <input type="number" id="calc-cost" value="500000" class="w-full pl-7 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-base font-semibold text-slate-800 focus:outline-none focus:border-indigo-400 transition">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-2">合約總年限 (年)</label>
+                            <input type="number" id="calc-years" value="5" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-base font-semibold text-slate-800 focus:outline-none focus:border-indigo-400 transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-slate-600 mb-2">假設屋主在第幾年要求解約？</label>
+                            <input type="range" id="calc-break-year" min="1" max="4" value="4" step="0.5" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-2">
+                            <div class="text-right mt-2">
+                                <span class="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded">第 <span id="display-break-year">4</span> 年解約</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-slate-100 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                            <span class="block text-sm text-slate-500 mb-2">談判話術數值：</span>
+                            <div class="text-sm text-slate-600 space-y-2 mb-4">
+                                <div class="flex justify-between items-center"><span>每年折舊攤提：</span><span class="font-bold text-slate-800 text-base"><span id="res-yearly">100,000</span> 元</span></div>
+                                <div class="flex justify-between items-center"><span>已使用折舊：</span><span class="font-bold text-slate-800 text-base"><span id="res-used">400,000</span> 元</span></div>
+                            </div>
+                            <span class="block text-sm font-bold text-slate-600 mb-2">屋主只需賠償剩餘殘值：</span>
+                            <div class="text-3xl font-black text-indigo-600">
+                                $<span id="res-penalty">100,000</span>
+                            </div>
+                        </div>
+
+                        <div class="text-sm text-slate-600 leading-relaxed bg-white border border-slate-100 p-4 rounded-lg mt-3 shadow-sm">
+                            <b>💡 談判金句：</b><br>「大哥/大姊，您看，若您第 4 年順利都更賺大錢，只要賠我這少少的殘值，並給我 3 個月安置租客就好。我絕對不會當釘子戶，我會幫您拍手恭喜！」
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script>
+        // 數據庫
+        const checklistData = [
+            // --- 七大合約架構 ---
+            { id: "s1", category: "structure", title: "1. 立契約書人", tag: "合約架構", summary: "確認由誰來立約。包租業須以公司法人名義承租。" },
+            { id: "s2", category: "structure", title: "2. 房子基本介紹", tag: "合約架構", summary: "地號、樓層、坪數等基本資料，需詳實核對。" },
+            { id: "s3", category: "structure", title: "3. 商業條件 (租金/稅費)", tag: "合約架構", summary: "租金、押金、代扣繳(所得稅+二代健保)等細節約定。" },
+            { id: "s4", category: "structure", title: "4. 修繕與裝修責任", tag: "合約架構", summary: "說明動用哪些地方，未來是否需要復原，以及復原費用由誰負擔。" },
+            { 
+                id: "s5", category: "structure", title: "5. 權利與義務 (次承租人租期限制)", tag: "合約架構", 
+                summary: "紅線：次承租人(房客)的租期，絕對不能超過我們與屋主的租約期限！",
+                details: "若我們與屋主的合約到 2030/12/31，房客合約絕不能跨到 2031年。<b>應對策略：</b>最後一年與房客簽約時，只簽 10或11個月，並承諾若與屋主順利續約，會在到期前 3 個月提早通知房客續約。"
+            },
+            { 
+                id: "s6", category: "structure", title: "6. 提前終止條款", tag: "合約架構", 
+                summary: "選擇「得」或「不得」提前終止，影響違約金的支付與否。",
+                details: "<b>得提前終止：</b>提前一個月告知，無需付違約金。<br><b>不得提前終止：</b>提前解約需負擔賠償費用(如裝潢殘值)。"
+            },
+            { id: "s7", category: "structure", title: "7. 現況確認與轉租同意書", tag: "合約架構", summary: "確認有無漏水、非自然身故等。最後務必簽署轉租同意書。" },
+
+            // --- 十大不得記載事項 (消保法) ---
+            { 
+                id: "i1", category: "illegal", title: "不得約定拋棄審閱期", tag: "違法踩雷區", 
+                summary: "合約依法必須有審閱期，不能寫「自願放棄審閱期」。" 
+            },
+            { 
+                id: "i2", category: "illegal", title: "不得約定廣告僅供參考", tag: "違法踩雷區", 
+                summary: "例如不能在合約註明「591照片僅供參考，以現場為主」。" 
+            },
+            { 
+                id: "i3", category: "illegal", title: "不得約定承租人不得申報租賃費用", tag: "違法踩雷區", 
+                summary: "房東不能在合約中要求房客不准報稅。" 
+            },
+            { 
+                id: "i4", category: "illegal", title: "不得約定承租人不得遷入戶籍", tag: "違法踩雷區", 
+                summary: "房東不能禁止房客設籍，此條款無效且違法。" 
+            },
+            { 
+                id: "i5", category: "illegal", title: "不得約定應由出租人負擔之稅賦轉嫁", tag: "違法踩雷區", 
+                summary: "房東不能寫「若因租你導致稅金增加，增加部分由房客負擔」。" 
+            },
+            { 
+                id: "i6", category: "illegal", title: "不得約定免除出租人之瑕疵擔保義務", tag: "違法踩雷區", 
+                summary: "房東不能寫「房子有漏水我沒說，概不負責」。" 
+            },
+            { 
+                id: "i7", category: "illegal", title: "不得約定承租人須繳回契約書", tag: "違法踩雷區", 
+                summary: "退租時，房東不能要求收回房客手上的合約書（為防報稅）。" 
+            },
+            { 
+                id: "i8", category: "illegal", title: "不得約定僅得由出租人以電話通知", tag: "違法踩雷區", 
+                summary: "溝通管道不能限制「只能打電話」，需有文字/Email/通訊軟體紀錄。" 
+            },
+            { 
+                id: "i9", category: "illegal", title: "不得記載違反強制或禁止規定", tag: "違法踩雷區", 
+                summary: "例如不能寫「欠租未滿兩個月就能強制趕人」。" 
+            },
+            { 
+                id: "i10", category: "illegal", title: "不得約定承租人不得申請租金補貼", tag: "違法踩雷區", 
+                summary: "這是目前最常見的問題，房東無權禁止房客申請政府租金補貼。" 
+            }
+        ];
+
+        let checkedItems = new Set();
+        let currentFilter = 'all';
+
+        const checklistContainer = document.getElementById('checklist-container');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const progressRing = document.getElementById('progress-ring');
+        const progressText = document.getElementById('progress-text');
+        const progressCount = document.getElementById('progress-count');
+
+        // Render List
+        function renderList() {
+            checklistContainer.innerHTML = '';
+            let filteredData = checklistData;
+            
+            if (currentFilter !== 'all') {
+                filteredData = checklistData.filter(item => item.category === currentFilter);
+            }
+
+            filteredData.forEach((item) => {
+                const isChecked = checkedItems.has(item.id);
+                const isIllegal = item.category === 'illegal';
+                
+                const row = document.createElement('div');
+                row.className = `group border-b border-slate-100 last:border-0 transition-colors duration-200 ${isChecked ? 'bg-slate-50' : 'bg-white hover:bg-slate-50'}`;
+                
+                let tagClass = isIllegal 
+                    ? (isChecked ? 'bg-rose-50 text-rose-300 border-rose-200' : 'bg-rose-50 text-rose-600 border-rose-200')
+                    : (isChecked ? 'bg-slate-100 text-slate-400 border-slate-200' : 'bg-slate-100 text-slate-600 border-slate-300');
+
+                row.innerHTML = `
+                    <div class="p-5 flex items-start gap-4">
+                        <div class="pt-1 flex-shrink-0">
+                            <button onclick="toggleCheck('${item.id}')" class="w-6 h-6 rounded border-2 flex items-center justify-center transition-colors duration-200 ${isChecked ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-300 text-transparent hover:border-slate-400'}">
+                                <i class="fa-solid fa-check text-sm"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="flex-grow min-w-0 cursor-pointer" onclick="toggleDetails('${item.id}')">
+                            <div class="flex flex-wrap items-center gap-3 mb-2">
+                                <h3 class="text-base font-bold transition-colors ${isChecked ? 'text-slate-400 line-through' : (isIllegal ? 'text-rose-700' : 'text-slate-800')}">${item.title}</h3>
+                                <span class="px-2.5 py-1 rounded text-xs font-bold tracking-wider uppercase border ${tagClass}">${item.tag}</span>
+                            </div>
+                            <p class="text-sm text-slate-500 mt-1 transition-all ${isChecked ? 'opacity-60 line-through' : ''}">${item.summary}</p>
+                            
+                            ${item.details ? `
+                            <div id="details-${item.id}" class="accordion-content mt-4 pt-4 border-t border-slate-100">
+                                <p class="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-200">${item.details}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        ${item.details ? `
+                        <div class="pt-1 flex-shrink-0 text-slate-300 group-hover:text-slate-500 cursor-pointer" onclick="toggleDetails('${item.id}')">
+                            <i id="icon-${item.id}" class="fa-solid fa-chevron-down transition-transform duration-300 text-base"></i>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                checklistContainer.appendChild(row);
+            });
+            updateProgress();
+        }
+
+        // Toggle Checkbox
+        window.toggleCheck = function(id) {
+            if (checkedItems.has(id)) checkedItems.delete(id);
+            else checkedItems.add(id);
+            renderList();
+        }
+
+        // Toggle Details (Accordion)
+        window.toggleDetails = function(id) {
+            const details = document.getElementById(`details-${id}`);
+            const icon = document.getElementById(`icon-${id}`);
+            if(details) {
+                details.classList.toggle('expanded');
+                icon.classList.toggle('rotate-180');
+            }
+        }
+
+        // Update Progress
+        function updateProgress() {
+            const total = checklistData.length;
+            const checked = checkedItems.size;
+            const percentage = total === 0 ? 0 : Math.round((checked / total) * 100);
+            
+            progressText.innerText = `${percentage}%`;
+            progressCount.innerText = `${checked} / ${total} 項目已檢核`;
+            progressRing.style.strokeDashoffset = 100 - percentage;
+        }
+
+        // Filter Logic
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                filterBtns.forEach(b => {
+                    b.classList.remove('bg-slate-800', 'text-white');
+                    b.classList.add('bg-white', 'text-slate-600');
+                });
+                const target = e.currentTarget;
+                target.classList.remove('bg-white', 'text-slate-600');
+                target.classList.add('bg-slate-800', 'text-white');
+                
+                currentFilter = target.getAttribute('data-filter');
+                renderList();
+            });
+        });
+
+        // --- Calculator Logic ---
+        const calcCost = document.getElementById('calc-cost');
+        const calcYears = document.getElementById('calc-years');
+        const calcBreakYear = document.getElementById('calc-break-year');
+        
+        const displayBreakYear = document.getElementById('display-break-year');
+        const resYearly = document.getElementById('res-yearly');
+        const resUsed = document.getElementById('res-used');
+        const resPenalty = document.getElementById('res-penalty');
+
+        function updateCalculator() {
+            const cost = parseFloat(calcCost.value) || 0;
+            const years = parseFloat(calcYears.value) || 1; // 避免除以 0
+            const breakYear = parseFloat(calcBreakYear.value) || 0;
+            
+            displayBreakYear.innerText = breakYear;
+
+            // 每年折舊 = 總成本 / 總年限
+            const yearlyDepreciation = cost / years;
+            
+            // 已使用折舊 = 每年折舊 * 解約年分
+            const usedDepreciation = yearlyDepreciation * breakYear;
+            
+            // 剩餘殘值 (需賠償) = 總成本 - 已使用折舊
+            // 若解約年分 >= 總合約年分，殘值為 0
+            let penalty = cost - usedDepreciation;
+            if (penalty < 0 || breakYear >= years) penalty = 0;
+
+            // 格式化顯示
+            resYearly.innerText = Math.round(yearlyDepreciation).toLocaleString();
+            resUsed.innerText = Math.round(usedDepreciation).toLocaleString();
+            resPenalty.innerText = Math.round(penalty).toLocaleString();
+        }
+
+        [calcCost, calcYears, calcBreakYear].forEach(input => {
+            input.addEventListener('input', updateCalculator);
+        });
+
+        // 監聽 calcYears 改變時，動態調整 calcBreakYear 的 max 值
+        calcYears.addEventListener('input', (e) => {
+            const maxYears = parseFloat(e.target.value) || 5;
+            calcBreakYear.max = maxYears - 0.5; // 限制解約時間不能大於等於合約期
+            if (parseFloat(calcBreakYear.value) >= maxYears) {
+                calcBreakYear.value = maxYears - 0.5;
+            }
+            updateCalculator();
+        });
+
+        // Init
+        renderList();
+        updateCalculator();
+
+    </script>
+</body>
+</html>
+```
+
+### 💡 這個實戰工具的特色：
+
+1.  **左側：合約檢核清單 (Checklist)**
+    *   將講師口述的 7 大合約架構與 10 大消保法不得記載事項（違法地雷區），轉化為可勾選的清單。
+    *   特別將「違法踩雷區」以紅色標示，提醒您在審閱屋主或文具行合約時提高警覺。
+    *   次承租人租期限制、提前終止條款等複雜觀念，點擊箭頭即可展開講師的「細節與應對策略」。
+2.  **右側：都更兵推計算器 (Calculator)**
+    *   這是一個非常好用的**談判輔助工具**。
+    *   您輸入「裝潢總投入」與「合約年限」，然後拉動滑桿改變「假設屋主解約的年份」，系統會即時算出**「每年折舊攤提」**、**「已使用折舊」**以及**「屋主只需賠償的剩餘殘值」**。
+    *   在談判現場，您可以直接滑動滑桿給屋主看：「您看，到了第 4 年，您只要賠我這少少的 10 萬，就可以順利去都更賺大錢了！」極大化屋主的安全感。
+
+點擊右上角 **Preview** 即可開始操作這份合約兵推表！
